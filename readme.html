@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>phpMultiAuth README</title>
+</head>
+
+<body>
+<h1>phpMultiAuth</h1>
+<p>phpMultiAuth v1.05</p>
+<p>Copyright (C) 2004-2005 Steve Goodman</p>
+<p>This library is free software; you can redistribute it and/or<br>
+  modify it under the terms of the GNU Lesser General Public<br>
+  License as published by the Free Software Foundation; either<br>
+  version 2.1 of the License, or (at your option) any later version.</p>
+<p>This library is distributed in the hope that it will be useful,<br>
+  but WITHOUT ANY WARRANTY; without even the implied warranty of<br>
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU<br>
+  Lesser General Public License for more details.</p>
+<p>You should have received a copy of the GNU Lesser General Public<br>
+  License along with this library; if not, write to the Free Software<br>
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA<br>
+</p>
+<p><a href="#1">Getting Started</a> | <a href="#2">Creating The Configuration File</a> | <a href="#3">Using HTTP or SESSION  and Templates</a> | <a href="#4">Using phpMultiAuth</a> |<a href="#5"> Securing certain pages even further</a> | <a href="#6">Support</a> | <a href="#7">Release Notes</a> | <a href="#8">Changelog</a></p>
+<h2>Getting Started<a name="1" id="1"></a></h2>
+<p>phpMultiAuth is easy to get started with, assuming you already have working, tested authentication services that are accessable from the server you wish to run phpMultiAuth on, and have the right PHP extensions installed or where appropriate correct binaries.</p>
+<p>This is a concise list of what you will need on to get each part of phpMultiAuth working before you configure and run it. If you want to find out what modules php is running, you should create a blank php file somewhere with the contents &lt;?php phpinfo() ?&gt; and look through. Delete the file though, after you have finished with it. </p>
+<p><strong>PHP Warnings should be off (to the browser) either in PHP.ini or your calling script</strong>. This is because some methods such as web authentication pop a warning when authentication fails. On a production web server, though, you probably wont be showing users error messages. If you need to turn them off in PHP precede the require with something along the lines of error_reporting(E_ERROR);</p>
+<p><strong>Encryption of session data: </strong>You will need the mcrypt library installed as a PHP module. See <a href="http://uk.php.net/manual/en/ref.mcrypt.php" target="_blank">here</a> for more information.</p>
+<p><strong>LDAP and Active Directory (works on win32 and *nix): </strong></p>
+<p>You will need the Open LDAP PHP modules installed and working. See <a href="http://uk.php.net/manual/en/ref.ldap.php" target="_blank">here</a> for more information. You will also need to know the LDAP/AD servers, and the Base DN for searching for user accounts.</p>
+<p>For Active Directory, you may need a search account if you wish to check group memberships. This is usually just a normal AD account.</p>
+<p>If you know what you are doing, the active directory options can be altered in the configuration file manually as they should also work on any LDAP server if you know what you are doing.</p>
+<p>The web server phpMultiAuth is running on will need to connect to port 389 of the LDAP server you wish to authenticate against (You can select another port in the config if your organisation runs it's LDAP server on a non-standard port)</p>
+<p><strong>NIS / yellow pages (works on *nix, may work with win32 nistools, though untested)</strong></p>
+<p>Your web server must be able to find the NIS server for the domain using a broadcast, so usually it would need to be in the same subnet as the NIS master or a slave.</p>
+<p>You either need to have the NIS/YP PHP module installed (see <a href="http://uk.php.net/manual/en/ref.nis.php">here</a>) or know the path to the ypmatch command. If you are using the ypmatch command, PHP will have to be able to execute the command which may be a problem in some configurations. phpMultiAuth will check it can executte the command and return an error if it cannot explaining this.</p>
+<p><strong>Web authentication (works on win32, *nix) </strong></p>
+<p>This is intended to pass-thru authentication to another web server that uses simple HTTP authentication. In a secured directory on the other web server, you should upload a file that contains just the letters <em>OK</em> in plain text, not HTML. You should check with a normal web browser first that the HTTP authentication on the other web server works as expected, as if you put it in a insecure directory then any username and password may work. </p>
+<p><strong>CIFS and Samba authentication (works on *nix, may work with a win32 smbclient port, untested) </strong></p>
+<p>This uses the smbclient command on unix to pull a secured remote file from a CIFS / windows file share. Usually you would set up a file share on a windows machine (as generally one of the above methods would be better for *nix machines) and grant permissions to the share (or file) to a certain group of users you want to be able to access the web site. You upload a plain text file containing the letters <em>OK</em> and if the NT username/password are valid against the share/file it will be able to open it. </p>
+<p>You need the NT server name, it's IP address, share name, domain name (if it is a standalone machine, use it's name as the domain name) and the name of the file you are checking against. </p>
+<p>You need smbclient installed on the web server and it needs to be executable by the PHP / web server user. If it isn't phpMultiAuth will tell you. </p>
+<p><strong>ADODB Database Authentication (works on win32 and *nix, tested against mysql databases) </strong></p>
+<p>To use this you will not only need the database libraries installed for the database server you wish to authenticate against (see <a href="http://uk2.php.net/manual/en/ref.mysql.php" target="_blank">here</a>, <a href="http://uk2.php.net/manual/en/ref.oracle.php" target="_blank">here</a> or many others) you will also need ADODB from <a href="http://adodb.sourceforge.net/" target="_blank">here</a> . You may wish to install this in your central includes directory, or copy it inside this directory. You should be prepared on the settings section of the configuration file to give the path to the directory that contains the adodb.inc.php file (don't give the file name itself as part of the path) which should be relative to the directory phpMultiAuth is in.</p>
+<p>If the rest of your system uses a different database abstraction library, or doesn't use one, this database connection should still work OK as it is only checking against the username/password fields of a table.</p>
+<p>Password encryption options are only implemented through the MYSQL password() SQL option. In a later release I may allow it to call a custom function that has been declared before phpMultiAuth starts to support custom encryption options you may implement in your own apps.</p>
+<h2>Creating the configuration file<a name="2" id="2"></a></h2>
+<p>You have two options for creating the config.inc.php file. You can make your own by hand using the <a href="config.inc.php.example">config.inc.php.example</a> as a template, or use the prefered method:</p>
+<p><a href="create_config.php"><strong>Config.inc.php file generator</strong></a></p>
+<p>The config file generator will allow you to create a config file by entering all the options and describes most options as it goes along. It is the prefered way of creating your base config.inc.php file and can be modified afterwards. Generally you would copy and paste the generated config.inc.php into a new text file and save it as config.inc.php in your phpMultiAuth folder.</p>
+<p>One thing to bear in mind is the $authentication[0]['enabled']=TRUE/FALSE options which allow you to selectively turn on/off the different chained authentication methods which is very useful in testing. You can also change the order of each authentication method by changing the $authentication[<em>X</em>] numbers for each section as this defines the order.</p>
+<h2>Using HTTP or SESSION  and Templates<a name="3" id="3"></a></h2>
+<p>Both options are provided and both work on both IIS and Apache servers, HTTP based authentication detecting which type of server it is running on and responding in the correct method.</p>
+<p>The HTTP authentication has a custom Failed Authentication page, the template for which is in <a href="templates/httpauth.html" target="_blank">templates/httpauth.html</a></p>
+<p>The HTTP failed authentication page does not have any custom variables that can be changed to be dynamic.</p>
+<p>The SESSION based authentication page is the LOGIN page for your site. The template is located at <a href="templates/session_login.html" target="_blank">templates/session_login.html</a></p>
+<p>The SESSION login template requires a number of custom values to work.</p>
+<p>The first is {ERROR} - this will be replaced with any error messages, such as login failed. The second is the form. This should post to itself (nowhere). </p>
+<p>The other important form fields are the fields username, password and _loginflag - username's default value should be username_marker, and _loginflag should be set to 1</p>
+<p>When customising these templates, it is best to set all references to graphics, CSS files from the root of the site - ie. &lt;img src=&quot;/images/spacer.gif&quot;&gt; or &lt;img src=&quot;http://www.company.com/images/space.gif&quot;&gt;. This is because the templates show as if they are the page that is secured, they do not appear to the end-user as being served from the templates directory.</p>
+<h2>Using phpMultiAuth<a name="4" id="4"></a></h2>
+<p>Once you have customised your template, and created your config.inc.php file, you can check phpMultiAuth works.</p>
+<p>A simple test page is provides, this is <a href="example.php">example.php</a> in the phpMultiAuth directory.</p>
+<p>To secure a page with phpMultiAuth, it is as simple as adding this PHP code at the top (before any white space, or HTML code) </p>
+<pre>&lt;?php 
+require('../path/to/phpmultiauth/phpmultiauth.inc.php'); 
+?&gt; 
+</pre>
+<p>If you decide to set the default for security to insecure, (for example if you wish to include phpmultiauth on every page - maybe you want it in a template) then you would also need to set the following variable first, IE:</p>
+<pre>&lt;?php $SECURE=TRUE ?&gt;
+&lt;?php 
+require('../path/to/phpmultiauth/phpmultiauth.inc.php'); 
+?&gt; 
+
+</pre>
+<h2>Securing certain pages even further<a name="5" id="5"></a><br>
+</h2>
+<p>If you have a page that needs to be more secure than others - for example you have an admin section of your site that only you can log into, you can restrict the page further, by adding a restrict_to variable before loading phpmultiauth:</p>
+<pre>&lt;?php
+$restrict_to='username1:username2';
+require('../path/to/phpmultiauth/phpmultiauth.inc.php'); 
+?&gt;</pre>
+<p>The above example could be very useful, for example if you wish to keep a text file somewhere containing a new line seperated file with the allowed users. For example, here is our test file:</p>
+<p>admin_users.txt:</p>
+<pre>james
+jenny
+steve
+mark
+dave
+</pre>
+<p>and at the top of our admin.php page, we use the restrict_to clause:</p>
+<pre>&lt;?php
+$restrict_to=implode(':',explode(&quot;\n&quot;,file_get_contents('/path/to/admin_users.txt')));
+
+require('../path/to/phpmultiauth/phpmultiauth.inc.php'); 
+
+?&gt; 
+
+</pre>
+<h2>Support<a name="6" id="6"></a></h2>
+<p>No support is included with phpMultiAuth. Your first port of call should be the website : <a href="http://phpmultiauth.sourceforge.net">http://phpmultiauth.sourceforge.net</a> </p>
+<h2>Release Notes (v1.05)<a name="7" id="7"></a></h2>
+<p>This is the second public release of phpMultiAuth, and is mainly a bug-fix for a single coding error across a number of files which reveals itself on certain PHP versions, and a correction to prevent a possible bug which I haven't experienced but fear some may. </p>
+<h2>Changelog</h2>
+<h3>v1.05 07 Sept 2005</h3>
+<p>* Removed session declaration from global statement where found inside functions. Incorrect, and causes problems on some PHP servers.<br>
+  * Added session_write_close statement before header redirect to ensure session variables are written inside main routine.</p>
+<h3>v1.04 06 Sept 2005</h3>
+<p>* Changed name from authentication.inc.php to phpmultiauth.inc.php<br>
+* Merged authentication_settings.inc.php and authentication_methods.inc.php into single config.inc.php file<br>
+* Renamed authentication_functions.inc.php to functions.inc.php<br>
+* Wrote missing functions for web, cifs and nis authentication<br>
+* Created config builder script<br>
+* Wrote basic documentation</p>
+<h3>v1.03 </h3>
+<p>* Added ADODB authentication</p>
+<h3>v1.00 - v1.02</h3>
+<p>First builds including bug checking, cross platform compatibility for base functions and LDAP. <br> 
+  <br>
+</p>
+<pre>&nbsp; </pre>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</body>
+</html>

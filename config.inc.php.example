@@ -1,0 +1,87 @@
+<?php
+/*
+phpMultiAuth v.1.04
+(C) 2004-2005 Steve Goodman
+*/
+
+// SETTINGS
+
+// Authentication Method - either Session (SESSION) based or HTTP based (HTTPAUTH)
+$settings['method']="SESSION";
+// Realm setting for HTTP Authentication
+$settings['httpauth_realm']="phpMultiAuth";
+// Session variable prefix (underscore _ gets added automatically)
+$settings['session_prefix']="session_prefix";
+$settings['encrypt_session_data']=TRUE; // Requires MCRYPT library
+$settings['encrypt_session_data_key']="387df*8fdfj3j.94ufjdhdhj"; // The encyption key should be long, unique and hard to guess.
+$settings['session_logout_get_var']="logout"; // The GET var used to logout i.e. pagename.php?logout=TRUE will logout, if logged in.
+// Default authentication. If '$SECURE' is not set (true/false) then this is the default for pages with no setting
+$settings['authdefault']="SECURE";
+// True/False for formatting username
+$settings['escapeshellcmd']=TRUE;
+$settings['addslashes']=TRUE;
+$settings['remove_at_and_anything_after']=TRUE;
+$settings['remove_trailing_dot_and_anything_after']=TRUE;
+// Decide whether to register the password (it's encrypted in the session but available to your scripts as plaintext)
+$settings['register_password']=TRUE;
+// ADODB Path for ADODB authentication
+$settings['adodb_path']=$settings['includedir'] . '/../includes/adodb/';
+
+// AUTHENTICATION METHODS
+
+// Please note you can drill down even FURTHER to just a specific set of usernames (if you cannot make a group for example)
+// By making a string on the calling page like this:
+// $restrict_to='username1|username2|username3|username4';
+// If you do this then ONLY those users can log in if their passwords are valid.
+
+// Note entries go in arrays. You can use different types of authentication if you want or have 2 different to different databases just increment $authentication array
+
+// Simple LDAP Entry for use against, for example, openLDAP
+$authentication[0]['type']="LDAP";
+$authentication[0]['server']="openldap.company.com";
+$authentication[0]['base_dn']="ou=People,dc=company,dc=com";
+$authentication[0]['enabled']=FALSE;
+
+// Active Directory LDAP connection using groups
+$authentication[1]['type']="LDAP";
+$authentication[1]['server']="activedirectory.company.com:389";
+$authentication[1]['base_dn']="OU=User Accounts,DC=activedirectory,DC=company,DC=com";
+$authentication[1]['attribute']="memberof|CN=Staff Group,OU=Groups,DC=activedirectory,DC=company,DC=com";
+$authentication[1]['search_account']="searchuser@activedirectory.company.com|ad.paSSword!"; // Active Directory search account for checking group membership
+$authentication[1]['active_directory']=TRUE;
+$authentication[1]['populate_session_data_from_ldap']=FALSE; // Registers various bits of data about the user in the session for use by the application
+$authentication[1]['enabled']=FALSE;
+
+// NIS Entry
+// Requires PHP YP/NIS library compiled in, or enter path to ypmatch if not available
+$authentication[2]['type']="NIS";
+$authentication[2]['nis_domain']="company.com";
+// only add this if you need to use ypmatch command instead of PHP YP/NIS library
+$authentication[2]['ypmatch_command']='/usr/bin/ypmatch';
+$authentication[2]['enabled']=FALSE;
+
+// WEB Entry using the file() command. {username} and {password} should be used here and will be substituted later. The file should contain just the letters 'OK'
+// See http://uk.php.net/manual/en/wrappers.ftp.php and http://uk.php.net/manual/en/wrappers.http.php for more infomation on building the path
+$authentication[3]['type']="WEB";
+$authentication[3]['path']="http://{username}:{password}@www.company.com/secure/auth.txt";
+$authentication[3]['enabled']=FALSE;
+
+// CIFS Entry (The share or the authentication file should be readable by the user logging in. The file should simply contain the words 'OK'
+// At present this code only works on Unix servers where PHP can run smbclient as the web server user.
+$authentication[4]['type']="CIFS";
+$authentication[4]['share']='//ntserver/share';
+$authentication[4]['file']='authentication.txt';
+$authentication[4]['server_ip']='192.168.255.254';
+$authentication[4]['domain']='ntdomain';
+$authentication[4]['smbclient']='/usr/local/bin/smbclient'; // Path to smbclient binary
+$authentication[4]['enabled']=FALSE;
+
+// Simple ADODB Sample. On windows you should be able to use the adodb.sourceforge.net library (or possibily on windows using the COM ADO plugin)
+$authentication[5]['type']="ADODB";
+$authentication[5]['database_server']="mysql|localhost";
+$authentication[5]['database']="dbuser|dbpassword|dbname";
+$authentication[5]['table']="tablename|username_field|password_field";
+$authentication[5]['encryption']="NONE"; // Or, quite simply,MYSQL if the password is a MYSQL encrypted password field.
+$authentication[5]['enabled']=FALSE;
+
+?>
